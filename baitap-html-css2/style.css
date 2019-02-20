@@ -1,0 +1,84 @@
+body {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  background-color: bisque;
+}
+.container {
+  width: 80%;
+  min-height: 400px;
+  margin: auto;
+}
+header {
+  width: 100%;
+  background-image: url("./nen.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.text1 {
+  top: 110px;
+  left: 100px;
+  position: absolute;
+  color: rgb(255, 255, 255);
+  line-height: 50%;
+}
+.text1 h1 {
+  font-size: 60px;
+}
+
+.tetx1 h3 {
+  font-size: 25px;
+}
+
+article {
+  background-color: rgb(240, 235, 232);
+}
+article::after {
+  clear: both;
+  display: block;
+  content: "";
+}
+#title1 {
+  padding-left: 30px;
+  padding-top: 30px;
+  color: rgb(31, 25, 25);
+}
+#title2 {
+  padding-left: 30px;
+  color: rgb(143, 137, 137);
+}
+#main {
+  width: 60%;
+  float: left;
+  padding-left: 60px;
+}
+#sidebar {
+  width: 35%;
+  float: left;
+  margin-left: -90px;
+}
+#main .item a {
+  width: 100%;
+}
+#main .item {
+  width: 40%;
+  padding: 0px 40px 20px 0px;
+  display: inline-block;
+}
+
+footer div {
+  width: 23%;
+  padding-left: 60px;
+  display: inline-block;
+}
+
+footer div h4 {
+  color: rgb(143, 137, 137);
+}
+
+.name {
+  font-family: "Rubik", sans-serif;
+}
