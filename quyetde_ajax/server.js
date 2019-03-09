@@ -2,142 +2,104 @@ const express = require("express");
 const path = require("path");
 const bodyParser = require("body-parser");
 const fs = require("fs");
+const mongoose = require("mongoose");
+const questionModel = require("./model");
 
-const server = express();
-server.use(express.static("public"));
-server.use(bodyParser.urlencoded({ extended: false }));
-server.use(bodyParser.json());
+mongoose.connect("mongodb://localhost:27017/quyetde", err => {
+  if (err) {
+    throw err;
+  }
+  console.log("Connect to Mongodb success");
 
-server.get("/", (req, res) => {
-  fs.readFile("./data.json", (err, data) => {
-    if (err) {
-      res.status(500).send("Internal server error");
-    }
+  const server = express();
+  server.use(express.static("public"));
+  server.use(bodyParser.urlencoded({ extended: false }));
+  server.use(bodyParser.json());
+
+  server.get("/", (req, res) => {
+    fs.readFile("./data.json", (err, data) => {
+      if (err) {
+        res.status(500).send("Internal server error");
+      }
+      res
+        .status(200)
+        .sendFile(path.resolve(__dirname + "/public/home-page.html"));
+    });
+  });
+
+  server.get("/result/:questionId", (req, res) => {
     res
       .status(200)
-      .sendFile(path.resolve(__dirname + "/public/home-page.html"));
+      .sendFile(path.resolve(__dirname + "/public/vote-result.html"));
   });
-});
 
-server.get("/result/:questionId", (req, res) => {
-  res
-    .status(200)
-    .sendFile(path.resolve(__dirname + "/public/vote-result.html"));
-});
-
-// server.get("/random", (req, res) => {
-//   fs.readFile("./data.json", (err, data) => {
-//     if (err) {
-//       res.status(500).send("Internal server error");
-//     }
-//     const questions = JSON.parse(data);
-//     const num = questions.length;
-//     res.status(200).send(num);
-//   });
-// });
-
-server.post("/yes-no", (req, res) => {
-  const questionId = Number(req.query.questionId);
-  const value = req.query.value;
-  fs.readFile("./data.json", (err, data) => {
-    if (err) {
-      res.status(500).send("Internal server error");
-    }
-    const questions = JSON.parse(data);
-    let selectQuestion;
-    for (let item of questions) {
-      if (item.id === questionId) {
-        selectQuestion = item;
-        break;
-      }
-    }
-    if (selectQuestion) {
-      if (value == "yes") {
-        questions[questionId].yes++;
-      }
-      if (value == "no") {
-        questions[questionId].no++;
-      }
-      if (value == "xemketqua") {
-        res.status(201).json({ url: `/result/${questionId}` });
-      }
-      fs.writeFile("./data.json", JSON.stringify(questions), err => {
-        if (err) throw err;
+  server.post("/yes-no", (req, res) => {
+    const questionId = req.query.questionId;
+    const value = req.query.value;
+    if (err) throw err;
+    if (value == "yes") {
+      questionModel.updateOne({ id: questionId }, { $inc: { yes: 1 } }, (err,data) => {
+        if(err) throw err;
       });
+    }
+    if (value == "no") {
+      questionModel.updateOne({ id: questionId }, { $inc: { no: 1 } }, (err,data) => {
+        if(err) throw err;
+      });
+    }
+    if (value == "xemketqua") {
       res.status(201).json({ url: `/result/${questionId}` });
-    } else {
-      res.status(201).json({ message: "Question not found" });
     }
+    res.status(201).json({ url: `/result/${questionId}` });
   });
-});
 
-server.get("/get-question-by-id", (req, res) => {
-  const questionId = req.query.questionId;
-  fs.readFile("./data.json", (err, data) => {
-    if (err) {
-      res.status(500).send("Internal server error");
-    }
-    
-    const questions = JSON.parse(data);
-    let selectQuestion;
-    for (let item of questions) {
-      if (item.id === Number(questionId)) {
-        selectQuestion = item;
-        break;
-      }
-    }
-    if (selectQuestion) {
-      res.status(200).json(selectQuestion);
-    } else {
-      res.status(200).json({ message: "Question not found" });
-    }
-  });
-});
-
-server.get("/data.json", (req, res) => {
-  res.status(200).sendFile(path.resolve(__dirname + "/data.json"));
-});
-
-server.get("/create-question", (req, res) => {
-  res
-    .status(200)
-    .sendFile(path.resolve(__dirname + "/public/create-question.html"));
-});
-
-server.post("/create-question", (req, res) => {
-  // let result;
-  fs.readFile("./data.json", (err, data) => {
-    if (err) {
-      res.status(500).send("Internal server error");
-    }
-
-    const questions = JSON.parse(data);
-    questions.push({
-      id: questions.length,
-      content: req.body.content,
-      yes: 0,
-      no: 0,
-      createAt: new Date().toLocaleString()
-    });
-    // result = fs.readFileSync("./public/question.html", "utf8");
-    // result = result.replace("my_ques", req.body.content);
-    // result = result.replace("my_vote", 0);
-    // result = result.replace("my_yes", "50%");
-    // result = result.replace("my_no", "50%");
-    // console.log(JSON.parse), JSON.stringify());
-    fs.writeFile("./data.json", JSON.stringify(questions), err => {
+  server.get("/get-random-question", async (req, res) => {
+    const questions = await questionModel.find();
+    let randomId = Math.floor(Math.random() * questions.length);
+    questionModel.findOne({ id: randomId }, (err, data) => {
       if (err) throw err;
+      res.status(200).json(data);
     });
-
-    res.status(201).json({ url: `/result/${questions.length-1}` });
   });
-});
 
-server.listen(3000, error => {
-  if (error) {
-    throw error;
-  }
-  console.log("Server listen on port 3000...");
+  server.get("/get-question-by-id", (req, res) => {
+    const questionId = req.query.questionId;
+    questionModel.findOne({ id: questionId }, (err, data) => {
+      if (err) throw err;
+      res.status(200).json(data);
+    });
+  });
+
+  server.get("/data.json", (req, res) => {
+    res.status(200).sendFile(path.resolve(__dirname + "/data.json"));
+  });
+
+  server.get("/create-question", (req, res) => {
+    res
+      .status(200)
+      .sendFile(path.resolve(__dirname + "/public/create-question.html"));
+  });
+
+  server.post("/create-question", async (req, res) => {
+    const questions = await questionModel.find();
+    const newQuestion = {
+      id: questions.length,
+      content: req.body.content
+    };
+
+    const result = await questionModel.create(newQuestion);
+    // res.status(201).json({
+    //   id: result._id,
+    // });
+    res.status(201).json({ url: `/result/${result.id}` });
+  });
+
+  server.listen(3000, error => {
+    if (error) {
+      throw error;
+    }
+    console.log("Server listen on port 3000...");
+  });
 });
 
 // server.post("/result/:id", (req, res) => {

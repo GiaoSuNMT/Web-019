@@ -5,7 +5,7 @@ $(document).ready(() => {
     url: `/get-question-by-id?questionId=${questionId}`,
     type: "GET",
     success: data => {
-      if (data.id || data.id == 0) {
+      if (data.id !== null) {
         document.getElementById("question-content").innerText = data.content;
         document.getElementById("total-votes").innerText = data.yes + data.no;
 
